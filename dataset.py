@@ -1,3 +1,5 @@
+# Name: Jiaming Yu
+# Time:
 from genericpath import exists
 from operator import index
 import torch
@@ -8,13 +10,14 @@ import numpy as np
 from model import MyNBVNetV3
 import pickle
 
+
 class VOXELDataset(Dataset):
-    def __init__(self, path, transform=None, processed_data=True, save_path='./processed_data.dat'):
+    def __init__(self, path, transform=None, processed_data=True, save_path='./process_data64.dat'):
         self.path = path
         self.processed_data = processed_data
         self.save_path = save_path
         self.transform = transform
-        
+
         # print(len(self.grid_path))
         if self.processed_data:
             self.grid_path = []
@@ -22,23 +25,24 @@ class VOXELDataset(Dataset):
 
             for root, _, files in os.walk(self.path):
                 if len(files) == 2:
-                    grid_path = os.path.join(root, 'grid.txt')
-                    label_path = os.path.join(root, 'view_ids.txt')
+                    grid_path = os.path.join(root, files[0])
+                    label_path = os.path.join(root, files[1])
                     # print(grid_path, label_path)
                     self.grid_path.append(grid_path)
                     self.label_path.append(label_path)
-            
+
             if not os.path.exists(self.save_path):
                 print('processing data, only running in the first epoch')
                 self.list_of_grid = [None] * len(self.grid_path)
                 self.list_of_label = [None] * len(self.label_path)
-
+                #print('save_path:', self.save_path, '\n')
                 for index in range(len(self.grid_path)):
                     grid_path = self.grid_path[index]
                     label_path = self.label_path[index]
-                    # print(grid_path,label_path)
-                    grid = np.genfromtxt(grid_path)[:, [-1]]
-                    # print(grid.shape)
+                    print('grid_path:', grid_path, "\n", 'label_path:', label_path)
+                    grid = np.genfromtxt(grid_path)
+                    #grid = np.genfromtxt(grid_path)[:, [-1]]
+                    #print(grid.shape)
                     label_list = np.genfromtxt(label_path, dtype=np.int32).tolist()
                     label = np.zeros(64)
                     label[label_list] = 1
@@ -58,7 +62,6 @@ class VOXELDataset(Dataset):
                     self.list_of_grid, self.list_of_label = pickle.load(f)
         # else:
 
-
     def __len__(self):
         return len(self.grid_path)
 
@@ -68,7 +71,7 @@ class VOXELDataset(Dataset):
 
 class VOXELDataset2(Dataset):
     def __init__(self, grid_path, label_path, transform=None):
-        self.transform  = transform
+        self.transform = transform
         self.grid = np.load(grid_path)
         self.label = np.load(label_path)
 
@@ -91,6 +94,7 @@ class ToTensor(object):
         return {'grid': torch.from_numpy(grid).to(torch.float32),
                 'label': torch.from_numpy(label).to(torch.float32)}
 
+
 class To3DGrid(object):
     def __call__(self, sample):
         grid = sample['grid']
@@ -102,8 +106,9 @@ class To3DGrid(object):
         return {'grid': grid,
                 'label': label}
 
+
 def test():
-    for root, _, files in os.walk('../data/SC_label_data'):
+    for root, _, files in os.walk('D:/Programfiles/SCVP/archive/SC_label_data/SC_label_data'):
         if len(files) == 2:
             label_path = os.path.join(root, files[1])
             print(label_path)
@@ -111,13 +116,31 @@ def test():
             label_list = np.genfromtxt(label_path, dtype=np.int64).tolist()
             label[label_list] = 1
             print(label)
-    
-            
-if __name__ == "__main__":
-    # dataset = VOXELDataset('../data/02747177', transform=transforms.Compose([To3DGrid(),ToTensor()]), processed_data=True, save_path='02747177.dat')
-    dataset = VOXELDataset2('../grids.npy', '../labels.npy', transform=transforms.Compose([To3DGrid(), ToTensor()]))
-    
-    
-    
 
-   
+import pickle
+
+def load_and_print_first_20_items(file_path):
+    try:
+        with open(file_path, 'rb') as file:
+            data = pickle.load(file)
+            # 假设数据是一个列表或类似的可迭代对象
+            #for item in data[0]:  # 打印前20个数据项
+            #    print(item)
+            print(len(data[0]))
+    except FileNotFoundError:
+        print(f"File not found: {file_path}")
+    except Exception as e:
+        print(f"An error occurred while loading the file: {e}")
+
+if __name__ == "__main__":
+    '''file_path = 'D:/Programfiles/SCVP/archive/process_data.dat'  # 替换为您的 .dat 文件路径
+    load_and_print_first_20_items(file_path)'''
+
+    if __name__ == "__main__":
+        dataset = VOXELDataset('D:/Programfiles/Myscvp/SC_label_data', transform=transforms.Compose([To3DGrid(),ToTensor()]), processed_data=True)
+    #dataset = VOXELDataset2('../grids.npy', '../labels.npy', transform=transforms.Compose([To3DGrid(), ToTensor()]))
+    #test()
+
+
+
+
